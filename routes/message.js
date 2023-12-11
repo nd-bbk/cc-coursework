@@ -20,10 +20,7 @@ async function appendPostData(post) {
     postJson.numberLikes = postJson.likes.length
     postJson.numberDislikes = postJson.dislikes.length
     try {
-
         postJson.numberComments = await Post.countDocuments({"postParent": postJson._id})
-        console.log(postJson._id)
-        console.log(postJson.numberComments)
     } catch {
         // Better to serve some reply, then no reply at all?
         console.log('Unable to connect to DB')
