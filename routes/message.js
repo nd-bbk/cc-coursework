@@ -267,7 +267,7 @@ router.patch('/dislike/:postId', verifyToken, async(req, res) => {
         res.status(400).send({message:"Post does not exist."})
         return
     }
-    if(postData.postOwner === req.user._id){
+    if(postData.postOwner == req.user._id){
         res.status(400).send({message:"User can not dislike own posts."})
         return
     }
