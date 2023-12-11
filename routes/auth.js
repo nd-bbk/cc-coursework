@@ -12,12 +12,14 @@ router.post("/register", async(req, res) =>{
 
     const {error} = registerValidation(req.body)
     if(error){
-        return res.status(400).send({message:error['details'][0]['message']})
+        res.status(400).send({message:error['details'][0]['message']})
+        return
     }
 
     const userExists = await User.findOne({email:req.body.email})
     if (userExists){
-        return res.status(400).send({message:"User already exists."})
+        res.status(400).send({message:"User already exists."})
+        return
     }
 
     const salt = await bcryptjs.genSalt(6)
@@ -32,8 +34,10 @@ router.post("/register", async(req, res) =>{
     try {
         const savedUser = await user.save()
         res.send(savedUser)
+        return
     } catch(err) {
-        return res.status(400).send({message:err})
+        res.status(400).send({message:err})
+        return
     }
 })
 
@@ -45,7 +49,7 @@ router.post("/login", async(req,res) => {
     if(!user) { return res.status(400).send({message:"User does not exist."})}
 
     const passwordValidation = await bcryptjs.compare(req.body.password, user.password)
-    if(!passwordValidation) {return res.status(400).send({message:"Password is wrong."})}
+    if(!passwordValidation) { return res.status(400).send({message:"Password is wrong."})}
 
     const token = jsonwebtoken.sign({_id:user.id}, process.env.TOKEN_SECRET)
     res.header('auth-token', token).send({'auth-token':token})

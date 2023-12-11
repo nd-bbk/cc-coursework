@@ -11,7 +11,8 @@ function auth(req,res,next){
         //console.log(verified)
         next()
     } catch(err){
-        return res.status(401).send({message:"Invalid Token"})
+        res.status(401).send({message:"Invalid Token"})
+        return
     }
 }
 

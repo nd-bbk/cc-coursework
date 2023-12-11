@@ -26,13 +26,11 @@ async function appendPostData(post) {
         console.log('Unable to connect to DB')
         postJson.numberComments = undefined
     }
-    // console.log(postJson)
     return postJson
 }
 
 //POST -> Posts a message
 router.post('/', verifyToken, async(req, res) => {
-    // console.log(req.user._id)
     // TODO: Waiting
     const postData = new Post({
         title: req.body.title,
@@ -40,17 +38,19 @@ router.post('/', verifyToken, async(req, res) => {
         message: req.body.message,
         expirationTime: req.body.expirationTime, // In minutes
         postOwner: req.user._id,
-        // IDK why it is so wierd, probably there is an easier way to do it
+        // IDK why it is so wierd, probably there is an easier way to do it (do it on mongodb side)
         expirationDate: new Date(Date.now()).setMinutes(new Date(Date.now()).getMinutes()+
             (req.body.expirationTime?req.body.expirationTime:Post.schema.path('expirationTime').options.default))
     })
 
     try {
         const postToSave = await postData.save()
-        return res.send(postToSave)
+        res.send(postToSave)
+        return
     } catch(err) {
         res.status(500)
-        return res.send({message: err})
+        res.send({message: err})
+        return
     }
 })
 
@@ -59,36 +59,35 @@ router.post('/', verifyToken, async(req, res) => {
 router.get('/', verifyToken ,async(req,res)=>{
 
     if (req.query.category){
-        console.log(req.query.category)
         try{
             const getPosts = await Post.find({"category":req.query.category})
             const postsJson = []
 
             for await (const post of getPosts) {
-                // console.log(post)
                 postsJson.push(await appendPostData(post))
             }
 
-            return res.send(postsJson)
+            res.send(postsJson)
+            return
         } catch(err){
             res.status(500)
-            return res.send({message:err})
+            res.send({message:err})
+            return
         }
     }
-    console.log("spacer")
     try{
         const getPosts = await Post.find()
         const postsJson = []
         for (const post of getPosts) {
-            // console.log(post)
             postsJson.push( await appendPostData(post))
         }
-        // console.log(postsJson)
-        return res.send(postsJson)
+        res.send(postsJson)
+        return
 
     } catch(err){
         res.status(500)
-        return res.send({message:err})
+        res.send({message:err})
+        return
     }
 })
 
@@ -97,36 +96,35 @@ router.get('/', verifyToken ,async(req,res)=>{
 router.get('/expired', verifyToken ,async(req,res)=>{
 
     if (req.query.category){
-        console.log(req.query.category)
         try{
             const getPosts = await Post.find({"category":req.query.category, "expirationDate":{"$lt":Date.now()}})
             const postsJson = []
 
             for await (const post of getPosts) {
-                // console.log(post)
                 postsJson.push(await appendPostData(post))
             }
 
-            return res.send(postsJson)
+            res.send(postsJson)
+            return
         } catch(err){
             res.status(500)
-            return res.send({message:err})
+            res.send({message:err})
+            return
         }
     }
-    console.log("spacer")
     try{
         const getPosts = await Post.find()
         const postsJson = []
         for (const post of getPosts) {
-            // console.log(post)
             postsJson.push( await appendPostData(post))
         }
-        // console.log(postsJson)
-        return res.send(postsJson)
+        res.send(postsJson)
+        return
 
     } catch(err){
         res.status(500)
-        return res.send({message:err})
+        res.send({message:err})
+        return
     }
 })
 
@@ -147,12 +145,13 @@ router.get('/hot', verifyToken ,async(req,res)=>{
 
             postsJson.push( await appendPostData(post))
         }
-        // console.log(postsJson)
-        return res.send(postsJson)
+        res.send(postsJson)
+        return
 
     } catch(err){
         res.status(500)
-        return res.send({message:err})
+        res.send({message:err})
+        return
     }
 })
 
@@ -160,12 +159,13 @@ router.get('/hot', verifyToken ,async(req,res)=>{
 router.get('/:postId',verifyToken, async(req,res) =>{
     try{
         const getPostById = await Post.findById(req.params.postId)
-        console.log(Date.now()-getPostById._id.getTimestamp())
         const postJson = appendPostData(getPostById)
-        return res.send(postJson)
+        res.send(postJson)
+        return
     }catch(err){
         res.status(500)
-        return res.send({message:err})
+        res.send({message:err})
+        return
     }
 })
 
@@ -174,7 +174,8 @@ router.post('/comment/:postId', verifyToken, async(req, res) => {
     // TODO:  check if post is not expired.
     const postCheck = await Post.findOne({_id:req.params.postId})
     if (postCheck.expirationDate<Date.now()){
-        return res.status(400).send({message:"Post expired."})
+        res.status(400).send({message:"Post expired."})
+        return
     }
     const postData = new Post({
         title: req.body.title,
@@ -189,10 +190,12 @@ router.post('/comment/:postId', verifyToken, async(req, res) => {
     })
     try {
         const postToSave = await postData.save()
-        return res.send(postToSave)
+        res.send(postToSave)
+        return
     } catch(err) {
         res.status(500)
-        return res.send({message: err})
+        res.send({message: err})
+        return
     }
 })
 
@@ -205,22 +208,24 @@ router.patch('/like/:postId', verifyToken, async(req, res) => {
     // TODO: Like, Check if user is not one posted, check if post is not expired.
 
     const postData = await Post.findOne({_id:req.params.postId})
-    console.log(postData)
-    console.log(req.user._id)
     // Check that post exists
     if (!postData){
-        return res.status(400).send({message:"Post does not exist."})
+        res.status(400).send({message:"Post does not exist."})
+        return
     }
-    if(postData.postOwner === req.user._id){
-        return res.status(400).send({message:"User can not like own posts."})
+    if(postData.postOwner == req.user._id){
+        res.status(400).send({message:"User can not like own posts."})
+        return
     }
     // Check that post is not liked
     if (postData.likes.includes(req.user._id)){
-        return res.status(400).send({message:"User already liked the post."})
+        res.status(400).send({message:"User already liked the post."})
+        return
     }
     //Check that post did not expire
     if (postData.expirationDate<Date.now()){
-        return res.status(400).send({message:"Post expired."})
+        res.status(400).send({message:"Post expired."})
+        return
     }
     // Liking disliked post only removes dislike.
     if (postData.dislikes.includes(req.user._id)){
@@ -230,10 +235,12 @@ router.patch('/like/:postId', verifyToken, async(req, res) => {
                 { $pull: { dislikes: req.user._id } }//,
                 // done
             )
-            return res.send(updatePostById)
+            res.send(updatePostById)
+            return
         } catch(err){
             res.status(500)
-            return res.send({message:err})
+            res.send({message:err})
+            return
         }
     }
 
@@ -243,10 +250,12 @@ router.patch('/like/:postId', verifyToken, async(req, res) => {
             { $push: { likes: req.user._id } }//,
             // done
         )
-        return res.send(updatePostById)
+        res.send(updatePostById)
+        return
     } catch(err){
         res.status(500)
-        return res.send({message:err})
+        res.send({message:err})
+        return
     }
 })
 
@@ -255,17 +264,21 @@ router.patch('/dislike/:postId', verifyToken, async(req, res) => {
     // TODO: Dislike
     const postData = await Post.findOne({_id:req.params.postId})
     if (!postData){
-        return res.status(400).send({message:"Post does not exist."})
+        res.status(400).send({message:"Post does not exist."})
+        return
     }
     if(postData.postOwner === req.user._id){
-        return res.status(400).send({message:"User can not dislike own posts."})
+        res.status(400).send({message:"User can not dislike own posts."})
+        return
     }
     if (postData.dislikes.includes(req.user._id)){
-        return res.status(400).send({message:"User already disliked the post."})
+        res.status(400).send({message:"User already disliked the post."})
+        return
     }
 
     if (postData.expirationDate<Date.now()){
-        return res.status(400).send({message:"Post expired."})
+        res.status(400).send({message:"Post expired."})
+        return
     }
 
     if (postData.likes.includes(req.user._id)){
@@ -275,10 +288,12 @@ router.patch('/dislike/:postId', verifyToken, async(req, res) => {
                 { $pull: { likes: req.user._id } }//,
                 // done
             )
-            return res.send(updatePostById)
+            res.send(updatePostById)
+            return
         } catch(err){
             res.status(400)
-            return res.send({message:err})
+            res.send({message:err})
+            return
         }
     }
 
@@ -288,10 +303,12 @@ router.patch('/dislike/:postId', verifyToken, async(req, res) => {
             { $push: { dislikes: req.user._id } }//,
             // done
         )
-        return res.send(updatePostById)
+        res.send(updatePostById)
+        return
     } catch(err){
         res.status(400)
-        return res.send({message:err})
+        res.send({message:err})
+        return
     }
 })
 

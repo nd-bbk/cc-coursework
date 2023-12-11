@@ -1,7 +1,7 @@
 const mongoose = require("mongoose")
 
 
-// PASSWORD SHOULD BE MAX 72 - else is not actually used to create hash
+// PASSWORD SHOULD BE MAX 72 - everything past 72nd character is not actually used to create hash
 const userSchema = mongoose.Schema({
     username:{
         type:String,
